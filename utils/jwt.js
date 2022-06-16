@@ -1,12 +1,15 @@
 const jwt = require('jsonwebtoken');
-const secret = process.env.SECRET;
+const secret = process.env.JWT_SECRET;
+const { pool } = require('./postgres');
+const { isArrayEmpty } = require('./postgres');
 
 module.exports = {
 	// accessToken 발급
 	getAccessToken: (user) => {
 		const payload = {
 			id: user.id,
-			role: user.role,
+			email: user.email,
+			name: user.name,
 		};
 
 		return jwt.sign(payload, secret, {
@@ -16,13 +19,13 @@ module.exports = {
 	},
 	// accessToken 검증
 	verifyAccessToken: (token) => {
-		let decoded = null;
 		try {
-			decoded = jwt.verify(token, secret);
+			const decoded = jwt.verify(token, secret);
 			return {
 				ok: true,
 				id: decoded.id,
-				role: decoded.role,
+				email: decoded.email,
+				name: decoded.name,
 			};
 		} catch (err) {
 			return {
@@ -32,27 +35,29 @@ module.exports = {
 		}
 	},
 	// refreshToken 발급
-	getRefreshToken: () => {
-		return jwt.sign({}, secret, {
+	getRefreshToken: (user) => {
+		const payload = {
+			id: user.id,
+		};
+		return jwt.sign(payload, secret, {
 			// refresh token은 payload 없이 발급
 			algorithm: 'HS256',
 			expiresIn: '14d',
 		});
 	},
 	//refreshToken 검증
-	verifyRefreshToken: async (token, userId) => {
-		// userId로 DB의 refreshToken 을 불러와서 검증하는 게 필요할 듯 ?
+	verifyRefreshToken: async (token) => {
 		try {
-			if (token === data) {
-				try {
-					jwt.verify(token, secret);
-					return true;
-				} catch (err) {
-					return false;
-				}
-			} else {
+			const decoded = jwt.verify(token, secret);
+			const sql =
+				'SELECT * FROM minfolink_user WHERE id = $1 AND refresh_token= $2';
+			const { rows } = await pool.query(sql, [decoded.id, token]);
+
+			// DB에 없으면 false
+			if (isArrayEmpty(rows)) {
 				return false;
 			}
+			return true;
 		} catch (err) {
 			return false;
 		}
