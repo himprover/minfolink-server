@@ -23,25 +23,25 @@ router.post('/signin/', async (req, res) => {
 		// 유저 DB 조회 결과가 없으면 회원이 아님
 		if (isArrayEmpty(rows)) {
 			res.status(403).end();
+		} else {
+			// 토큰 생성
+			const jwtPayload = {
+				id: data.id,
+				email: data.email,
+				name: data.name,
+			};
+			const accessToken = getAccessToken(jwtPayload);
+			const refreshToken = getRefreshToken(jwtPayload);
+
+			const insertRefreshTokenSql =
+				'UPDATE minfolink_user SET refresh_token = $1 where id = $2';
+			await pool.query(insertRefreshTokenSql, [refreshToken, data.id]);
+
+			res
+				.status(200)
+				.json({ accessToken: accessToken, refreshToken: refreshToken })
+				.end();
 		}
-
-		// 토큰 생성
-		const jwtPayload = {
-			id: data.id,
-			email: data.email,
-			name: data.name,
-		};
-		const accessToken = getAccessToken(jwtPayload);
-		const refreshToken = getRefreshToken(jwtPayload);
-
-		const insertRefreshTokenSql =
-			'UPDATE minfolink_user SET refresh_token = $1 where id = $2';
-		await pool.query(insertRefreshTokenSql, [refreshToken, data.id]);
-
-		res
-			.status(200)
-			.json({ accessToken: accessToken, refreshToken: refreshToken })
-			.end();
 	} catch (error) {
 		// 전달받은 토큰 자체가 문제, 리소스를 얻지 못해 로그인 처리 불가
 		console.error('accessTokenError', error);
