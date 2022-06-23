@@ -7,6 +7,7 @@ const { getAccessToken, getRefreshToken } = require('../../utils/jwt');
 router.post('/signin/', async (req, res) => {
 	// accessToken 전달받음
 	const oAuthAccessToken = req.body.accessToken;
+
 	try {
 		// accessToken으로 resource server에 요청해 리소스 전달받음
 		const { data } = await axios({
@@ -21,7 +22,7 @@ router.post('/signin/', async (req, res) => {
 
 		// 유저 DB 조회 결과가 없으면 회원이 아님
 		if (isArrayEmpty(rows)) {
-			res.status(403);
+			res.status(403).end();
 		}
 
 		// 토큰 생성
@@ -39,11 +40,12 @@ router.post('/signin/', async (req, res) => {
 
 		res
 			.status(200)
-			.json({ accessToken: accessToken, refreshToken: refreshToken });
+			.json({ accessToken: accessToken, refreshToken: refreshToken })
+			.end();
 	} catch (error) {
 		// 전달받은 토큰 자체가 문제, 리소스를 얻지 못해 로그인 처리 불가
 		console.error('accessTokenError', error);
-		res.status(401);
+		res.status(401).end();
 	}
 });
 
