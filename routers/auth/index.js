@@ -10,10 +10,17 @@ router.post('/signin/', async (req, res, next) => {
 
 	try {
 		// accessToken으로 resource server에 요청해 리소스 전달받음
-		const { data } = await axios({
-			method: 'get',
-			url: `https://graph.facebook.com/v14.0/me?fields=id%2Cname%2Cemail&access_token=${oAuthAccessToken}`,
-		});
+		let data;
+		try {
+			data = (
+				await axios({
+					method: 'get',
+					url: `https://graph.facebook.com/v14.0/me?fields=id%2Cname%2Cemail&access_token=${oAuthAccessToken}`,
+				})
+			).data;
+		} catch (error) {
+			throw { status: 401, message: 'oAuthAccessToken 문제' };
+		}
 
 		console.log(data);
 
@@ -22,8 +29,7 @@ router.post('/signin/', async (req, res, next) => {
 
 		// 유저 DB 조회 결과가 없으면 회원이 아님
 		if (isArrayEmpty(rows)) {
-			res.status(403).end();
-			next();
+			throw { status: 403, message: '회원가입 정보가 없음' };
 		} else {
 			// 토큰 생성
 			const jwtPayload = {
@@ -36,19 +42,23 @@ router.post('/signin/', async (req, res, next) => {
 
 			const insertRefreshTokenSql =
 				'UPDATE minfolink_user SET refresh_token = $1 where id = $2';
-			await pool.query(insertRefreshTokenSql, [refreshToken, data.id]);
+
+			try {
+				await pool.query(insertRefreshTokenSql, [refreshToken, data.id]);
+			} catch (error) {
+				throw { status: 500, message: 'DB 에러' };
+			}
 
 			res
 				.status(200)
 				.json({ accessToken: accessToken, refreshToken: refreshToken })
 				.end();
-			next();
+			return;
 		}
 	} catch (error) {
-		// 전달받은 토큰 자체가 문제, 리소스를 얻지 못해 로그인 처리 불가
-		console.error('accessTokenError', error);
-		res.status(401).end();
-		next();
+		console.error('로그인 오류발생 - ', error.status, error.message);
+		res.status(error.status).end();
+		return;
 	}
 });
 
@@ -61,30 +71,35 @@ router.post('/signup/', async (req, res, next) => {
 	const { privacy } = req.body;
 	const { marketing } = req.body;
 
-	if (
-		isValueEmpty(link) ||
-		isValueEmpty(nickname) ||
-		isValueEmpty(profileImage) ||
-		isValueEmpty(terms) ||
-		isValueEmpty(privacy) ||
-		isValueEmpty(marketing)
-	) {
-		res.status(400).end();
-		next();
-	}
-
 	try {
-		const { data } = await axios({
-			method: 'get',
-			url: `https://graph.facebook.com/v14.0/me?fields=id%2Cname%2Cemail&access_token=${oAuthAccessToken}`,
-		});
+		if (
+			isValueEmpty(link) ||
+			isValueEmpty(nickname) ||
+			isValueEmpty(profileImage) ||
+			isValueEmpty(terms) ||
+			isValueEmpty(privacy) ||
+			isValueEmpty(marketing)
+		) {
+			throw { status: 400, message: '올바르지 않은 회원가입 정보' };
+		}
+
+		let data;
+		try {
+			data = (
+				await axios({
+					method: 'get',
+					url: `https://graph.facebook.com/v14.0/me?fields=id%2Cname%2Cemail&access_token=${oAuthAccessToken}`,
+				})
+			).data;
+		} catch (error) {
+			throw { status: 401, message: '올바르지 않은 oAuthAccesToken' };
+		}
 
 		const checkUserSql = 'SELECT * FROM minfolink_user where id = $1';
 		const { rows } = await pool.query(checkUserSql, [data.id]);
 		// 유저 DB 조회 결과가 있으면 회원가입 불가
 		if (!isArrayEmpty(rows)) {
-			res.status(409).end();
-			next();
+			throw { status: 409, message: '이미 가입되어 있는 회원' };
 		}
 
 		const insertUser = [
@@ -104,12 +119,11 @@ router.post('/signup/', async (req, res, next) => {
 		const insertResult = await pool.query(insertUserSql, insertUser);
 
 		res.status(200).end();
-		next();
+		return;
 	} catch (error) {
-		// 전달받은 토큰 자체가 문제, 리소스를 얻지 못해 로그인 처리 불가
-		console.error('accessTokenError', error);
-		res.status(401).end();
-		next();
+		console.error('로그인 오류발생 - ', error.status, error.message);
+		res.status(error.status).end();
+		return;
 	}
 });
 
