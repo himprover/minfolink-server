@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { pool, isArrayEmpty, isValueEmpty } = require('../../utils/postgres');
-const { getAccessToken, getRefreshToken } = require('../../utils/jwt');
+const { createAccessToken, createRefreshToken } = require('../../utils/jwt');
 
 router.post('/signin/', async (req, res) => {
 	// accessToken 전달받음
@@ -24,13 +24,13 @@ router.post('/signin/', async (req, res) => {
 
 		console.log(userInfo);
 
-		const checkUserSql = 'SELECT * FROM minfolink_user where id = $1';
+		const checkUserSql = 'SELECT * FROM minfolink_user where id = $1::INT8';
 
 		let dbUser;
 		try {
 			dbUser = (await pool.query(checkUserSql, [userInfo.id])).rows;
 		} catch (error) {
-			throw { status: 500, message: 'DB 회원정보 조회 에러' };
+			throw { status: 500, message: 'DB 회원정보 조회 에러' + error };
 		}
 
 		// 유저 DB 조회 결과가 없으면 회원이 아님
@@ -43,11 +43,11 @@ router.post('/signin/', async (req, res) => {
 				email: userInfo.email,
 				name: userInfo.name,
 			};
-			const accessToken = getAccessToken(jwtPayload);
-			const refreshToken = getRefreshToken(jwtPayload);
+			const accessToken = createAccessToken(jwtPayload);
+			const refreshToken = createRefreshToken(jwtPayload);
 
 			const insertRefreshTokenSql =
-				'UPDATE minfolink_user SET refresh_token = $1 where id = $2';
+				'UPDATE minfolink_user SET refresh_token = $1 where id = $2::INT8';
 
 			try {
 				await pool.query(insertRefreshTokenSql, [refreshToken, userInfo.id]);
