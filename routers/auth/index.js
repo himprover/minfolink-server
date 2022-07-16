@@ -2,7 +2,12 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const { pool, isArrayEmpty, isValueEmpty } = require('../../utils/postgres');
-const { createAccessToken, createRefreshToken } = require('../../utils/jwt');
+const {
+	createAccessToken,
+	createRefreshToken,
+	getAccessTokenInRequest,
+	verifyAccessToken,
+} = require('../../utils/jwt');
 
 router.post('/signin/', async (req, res) => {
 	// accessToken 전달받음
@@ -129,6 +134,7 @@ router.post('/signup/', async (req, res) => {
 			'INSERT INTO minfolink_user(id,email,link,nickname,profile_image,is_enabled,created_at,updated_at,terms,privacy,marketing)' +
 			'VALUES ($1, $2, $3, $4, $5, $6, current_timestamp, current_timestamp, $7, $8, $9)';
 		try {
+			gi;
 			await pool.query(insertUserSql, insertUser);
 		} catch (error) {
 			throw { status: 500, message: 'DB 회원정보 insert 에러' };
@@ -143,4 +149,22 @@ router.post('/signup/', async (req, res) => {
 	}
 });
 
+router.delete('/signout/', async (req, res) => {
+	const verifiedAccessToken = verifyAccessToken(getAccessTokenInRequest(req));
+	console.log(verifiedAccessToken);
+	try {
+		const deleteRefreshTokenSql = `UPDATE minfolink_user SET refresh_token='' where id = $1::INT8`;
+
+		try {
+			await pool.query(deleteRefreshTokenSql, [verifiedAccessToken.id]);
+		} catch (error) {
+			throw { status: 500, message: 'DB 회원정보 조회 에러' + error };
+		}
+
+		return res.status(204).end();
+	} catch (error) {
+		console.error('인증헤더 오류발생 - ', error.status, error.message);
+		return res.status(error.status).end();
+	}
+});
 module.exports = router;
