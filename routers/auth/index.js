@@ -56,7 +56,7 @@ router.post('/signin/', async (req, res) => {
 			}
 
 			res
-				.status(200)
+				.status(201)
 				.json({ accessToken: accessToken, refreshToken: refreshToken })
 				.end();
 			return;
@@ -134,7 +134,7 @@ router.post('/signup/', async (req, res) => {
 			throw { status: 500, message: 'DB 회원정보 insert 에러' };
 		}
 
-		res.status(200).end();
+		res.status(201).end();
 		return;
 	} catch (error) {
 		console.error('회원가입 오류발생 - ', error.status, error.message);
