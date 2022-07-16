@@ -75,9 +75,6 @@ router.post('/signin/', async (req, res) => {
 
 router.post('/signup/', async (req, res) => {
 	const oAuthAccessToken = req.body.accessToken;
-	const { link } = req.body;
-	const { nickname } = req.body;
-	const { profileImage } = req.body;
 	const { terms } = req.body;
 	const { privacy } = req.body;
 	const { marketing } = req.body;
@@ -108,13 +105,15 @@ router.post('/signup/', async (req, res) => {
 			throw { status: 409, message: '이미 가입되어 있는 회원' };
 		}
 
+		const profileImage = `http://graph.facebook.com/${userInfo.id}/picture?type=large&redirect=true&width=500&height=500`;
+		const nickname = userInfo.name;
+
 		if (
-			isValueEmpty(link) ||
-			isValueEmpty(nickname) ||
-			isValueEmpty(profileImage) ||
 			isValueEmpty(terms) ||
 			isValueEmpty(privacy) ||
-			isValueEmpty(marketing)
+			isValueEmpty(marketing) ||
+			!terms ||
+			!privacy
 		) {
 			throw { status: 400, message: '올바르지 않은 회원가입 정보' };
 		}
@@ -122,7 +121,7 @@ router.post('/signup/', async (req, res) => {
 		const insertUser = [
 			userInfo.id,
 			userInfo.email,
-			link,
+			null,
 			nickname,
 			profileImage,
 			true,
@@ -134,10 +133,9 @@ router.post('/signup/', async (req, res) => {
 			'INSERT INTO minfolink_user(id,email,link,nickname,profile_image,is_enabled,created_at,updated_at,terms,privacy,marketing)' +
 			'VALUES ($1, $2, $3, $4, $5, $6, current_timestamp, current_timestamp, $7, $8, $9)';
 		try {
-			gi;
 			await pool.query(insertUserSql, insertUser);
 		} catch (error) {
-			throw { status: 500, message: 'DB 회원정보 insert 에러' };
+			throw { status: 500, message: 'DB 회원정보 insert 에러 ' + error };
 		}
 
 		res.status(201).end();
