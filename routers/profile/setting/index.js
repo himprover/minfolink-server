@@ -3,10 +3,11 @@ const router = express.Router();
 const { pool, isArrayEmpty } = require('../../../utils/postgres');
 
 /*
-    3글자 이상, 30글자 이하
+	링크 설정 규칙
+    3글자 이상, 20글자 이하
     영어, 숫자, '_' 만 허용
 */
-const linkReg = /^[A-Za-z0-9_]{3,30}$/;
+const linkReg = /^[A-Za-z0-9_]{3,20}$/;
 
 router.get('/link', async (req, res) => {
 	const link = req.query.link;
