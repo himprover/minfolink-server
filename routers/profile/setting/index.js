@@ -1,39 +1,33 @@
 const express = require('express');
+const {
+	getAccessTokenInRequest,
+	verifyAccessToken,
+} = require('../../../utils/jwt');
 const router = express.Router();
-const { pool, isArrayEmpty } = require('../../../utils/postgres');
-
-/*
-	링크 설정 규칙
-    3글자 이상, 20글자 이하
-    영어, 숫자, '_' 만 허용
-*/
-const linkReg = /^[A-Za-z0-9_]{3,20}$/;
+const { pool } = require('../../../utils/postgres');
+const { linkCheck } = require('../../../utils/profile/setting/link');
 
 router.get('/link', async (req, res) => {
 	const link = req.query.link;
-	try {
-		if (!linkReg.test(link)) {
-			throw { status: 400, message: '올바르지 않은 규칙' };
-		}
-		const getLinkSql = 'SELECT * FROM minfolink_user where link = $1';
+	const linkCheckResult = await linkCheck(link);
 
-		let dbLink;
-		try {
-			dbLink = (await pool.query(getLinkSql, [link])).rows;
-		} catch (error) {
-			throw { status: 500, message: 'DB 조회 에러' + error };
-		}
-
-		// 유저 DB 조회 결과가 있으면 중복
-		if (!isArrayEmpty(dbLink)) {
-			throw { status: 409, message: '중복된 링크' };
-		}
-
-		return res.status(200).end();
-	} catch (error) {
-		console.error('링크 확인 오류발생 - ', error.status, error.message);
-		return res.status(error.status).end();
-	}
+	return res.status(linkCheckResult.status).end();
 });
 
+router.patch('/link', async (req, res) => {
+	const link = req.body.link;
+	const linkCheckResult = await linkCheck(link);
+	if (linkCheckResult.status !== 200) {
+		return res.status(linkCheckResult.status).end();
+	}
+	const { id } = verifyAccessToken(getAccessTokenInRequest(req));
+	const patchLinkSql = 'UPDATE minfolink_user SET link = $1 where id = $2';
+
+	try {
+		const sql = await pool.query(patchLinkSql, [link, id]);
+	} catch (error) {
+		return { status: 500, message: 'DB 조회 에러' + error };
+	}
+	return res.status(200).end();
+});
 module.exports = router;
