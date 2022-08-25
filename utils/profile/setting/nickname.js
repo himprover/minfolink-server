@@ -5,7 +5,7 @@
 */
 const Reg = /^[A-Za-z가-힣0-9_]{2,10}$/;
 
-const nicknameCheck = async (nickname) => {
+const nicknameCheck = (nickname) => {
 	if (!Reg.test(nickname)) {
 		return { status: 400, message: '올바르지 않은 규칙' };
 	}
