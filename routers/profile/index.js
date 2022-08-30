@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { authCheck } = require('../../middlewares/authCheck');
 
-const setting = require('./setting');
-
-router.use('/setting', setting);
+router.use('/setting', authCheck, require('./setting'));
+router.use('/sns', require('./sns'));
 
 module.exports = router;
