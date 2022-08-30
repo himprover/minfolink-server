@@ -1,0 +1,34 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+
+const {
+	getAccessTokenInRequest,
+	verifyAccessToken,
+} = require('../../../../utils/jwt');
+const { pool } = require('../../../../utils/postgres');
+const { s3_storage } = require('../../../../utils/s3');
+
+const s3_upload = multer({
+	storage: s3_storage('user/profile/image/'),
+});
+
+const upload_profile_s3 = s3_upload.fields([{ name: 'image', maxCount: 1 }]);
+
+router.patch('/', upload_profile_s3, async (req, res) => {
+	const { id } = verifyAccessToken(getAccessTokenInRequest(req));
+
+	const newImageUrl = req.files['image'][0].location;
+	const patchImageSql =
+		'UPDATE minfolink_user SET profile_image = $1 where id = $2';
+
+	try {
+		await pool.query(patchImageSql, [newImageUrl, id]);
+	} catch (error) {
+		return { status: 500, message: 'DB 패치 에러' + error };
+	}
+
+	return res.status(200).end();
+});
+
+module.exports = router;

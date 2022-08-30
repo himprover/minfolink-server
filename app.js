@@ -6,6 +6,9 @@ const cors = require('cors');
 
 const router = require('./routers/index');
 
+const iconv = require('iconv-lite');
+iconv.skipDecodeWarning = true;
+
 // 포트번호 5000으로 실행
 app.set('port', 5000);
 

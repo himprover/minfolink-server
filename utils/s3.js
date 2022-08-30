@@ -1,5 +1,4 @@
 const aws = require('aws-sdk');
-const multer = require('multer');
 const multer_s3 = require('multer-s3');
 const iconv = require('iconv-lite');
 
@@ -9,14 +8,14 @@ const s3 = new aws.S3({
 	region: process.env.AWS_REGION,
 });
 
-const storage = (src) =>
+const s3_storage = (src) =>
 	multer_s3({
 		s3: s3,
 		bucket: 'minfolink',
 		contentType: multer_s3.AUTO_CONTENT_TYPE,
 		acl: 'public-read',
 		metadata: function (req, file, cb) {
-			cb(null, { fieldName: file.fieldname });
+			if (file.mimetype) cb(null, { fieldName: file.fieldname });
 		},
 		key: function (req, file, cb) {
 			file.originalname = iconv.decode(file.originalname, 'utf-8');
@@ -24,9 +23,4 @@ const storage = (src) =>
 		},
 	});
 
-const s3_upload = (src) =>
-	multer({
-		storage: storage(src),
-	});
-
-module.exports = { s3_upload };
+module.exports = { s3_storage };
