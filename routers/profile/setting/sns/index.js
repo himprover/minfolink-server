@@ -14,6 +14,7 @@ const URL_REG =
 router.put('/', async (req, res) => {
 	const snsType = req.body.type;
 	const snsLink = req.body.link;
+	const snsSequence = req.body.sequence;
 
 	if (
 		snsType === undefined ||
@@ -28,11 +29,16 @@ router.put('/', async (req, res) => {
 		return res.status(400).json({ errorCode: 400002 }).end();
 	}
 
+	if (snsSequence === undefined || typeof snsSequence !== 'number') {
+		console.log('SNS 링크 변경, SEQUENCE 오류');
+		return res.status(400).json({ errorCode: 400003 }).end();
+	}
+
 	const { id } = verifyAccessToken(getAccessTokenInRequest(req));
 	try {
 		const putSql =
-			'INSERT INTO user_sns (id, type, link) VALUES ($1, $2, $3) ON CONFLICT (id, type) DO UPDATE SET link=$3';
-		await pool.query(putSql, [id, snsType, snsLink]);
+			'INSERT INTO user_sns (id, sequence, type, link) VALUES ($1, $2, $3, $4) ON CONFLICT (id, sequence) DO UPDATE SET type=$3, link=$4';
+		await pool.query(putSql, [id, snsSequence, snsType, snsLink]);
 		return res.status(200).end();
 	} catch (error) {
 		console.log('SNS 링크 변경, DB 오류 ' + error);
