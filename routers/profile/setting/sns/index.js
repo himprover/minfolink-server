@@ -7,7 +7,14 @@ const {
 } = require('../../../../utils/jwt');
 const { pool } = require('../../../../utils/postgres');
 
-const SNS_TYPE_LIST = ['instagram', 'facebook', 'youtube', 'twitch', 'twitter'];
+const SNS_TYPE_LIST = [
+	'instagram',
+	'facebook',
+	'youtube',
+	'twitch',
+	'twitter',
+	'kakaotalk',
+];
 const URL_REG =
 	/^(((http(s?))\:\/\/)?)([0-9a-zA-Z\-]+\.)+[a-zA-Z]{2,6}(\:[0-9]+)?(\/\S*)?$/;
 
@@ -29,7 +36,12 @@ router.put('/', async (req, res) => {
 		return res.status(400).json({ errorCode: 400002 }).end();
 	}
 
-	if (snsSequence === undefined || typeof snsSequence !== 'number') {
+	if (
+		snsSequence === undefined ||
+		typeof snsSequence !== 'number' ||
+		snsSequence > 5 ||
+		snsSequence < 1
+	) {
 		console.log('SNS 링크 변경, SEQUENCE 오류');
 		return res.status(400).json({ errorCode: 400003 }).end();
 	}
