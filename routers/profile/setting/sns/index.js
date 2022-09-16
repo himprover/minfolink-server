@@ -46,7 +46,7 @@ router.put('/', async (req, res) => {
 		const putSql =
 			'INSERT INTO user_sns (id, sequence, type, link) VALUES ($1, $2, $3, $4) ON CONFLICT (id, sequence) DO UPDATE SET type=$3, link=$4';
 		await pool.query(putSql, [id, snsSequence, snsType, snsLink]);
-		return res.status(200).end();
+		return res.status(201).end();
 	} catch (error) {
 		console.log('SNS 링크 변경, DB 오류 ' + error);
 		return res.status(500).end();
@@ -64,7 +64,7 @@ router.delete('/', async (req, res) => {
 	try {
 		const putSql = 'UPDATE user_sns SET link=NULL WHERE id=$1 AND sequence=$2';
 		await pool.query(putSql, [id, snsSequence]);
-		return res.status(200).end();
+		return res.status(204).end();
 	} catch (error) {
 		console.log('SNS 링크 변경, DB 오류 ' + error);
 		return res.status(500).end();
