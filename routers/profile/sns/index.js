@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
 		const { id } = (await pool.query(getUserIdSql, [userLink])).rows[0];
 
 		const getSnsSql =
-			'SELECT sequence, type, link from user_sns where id=$1 AND link IS NOT NULL ORDER BY sequence';
+			'SELECT sequence, type, link from user_sns where user_id=$1 AND link IS NOT NULL ORDER BY sequence';
 		const sns = (await pool.query(getSnsSql, [id])).rows;
 		return res.status(200).json({ sns: sns }).end();
 	} catch (error) {
