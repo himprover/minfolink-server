@@ -7,6 +7,7 @@ const user = require('./user');
 const profile = require('./profile');
 
 router.use('/auth', auth);
+
 router.use('/user', authCheck, user);
 router.use('/profile', profile);
 
