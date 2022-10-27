@@ -19,3 +19,7 @@ app.listen(app.get('port'), () => {
 app.use(express.json());
 app.use(cors());
 app.use(router);
+
+// swagger
+const { swaggerUi, specs } = require('./swagger/swagger');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
