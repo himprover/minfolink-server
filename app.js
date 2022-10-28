@@ -3,11 +3,14 @@ require('dotenv').config();
 const app = express();
 
 const cors = require('cors');
+require('better-module-alias')(__dirname);
 
 const router = require('./routers/index');
 
 const iconv = require('iconv-lite');
 iconv.skipDecodeWarning = true;
+
+app.use(cors());
 
 // 포트번호 5000으로 실행
 app.set('port', 5000);
@@ -17,9 +20,9 @@ app.listen(app.get('port'), () => {
 });
 
 app.use(express.json());
-app.use(cors());
+
 app.use(router);
 
 // swagger
-const { swaggerUi, specs } = require('./swagger/swagger');
+const { swaggerUi, specs } = require('@swagger/swagger');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));

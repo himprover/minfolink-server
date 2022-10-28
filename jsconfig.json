@@ -1,0 +1,11 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@routers/*": ["./routers/*"],
+			"@utils/*": ["./utils/*"],
+			"@swagger/*": ["./swagger/*"]
+		}
+	},
+	"exclude": ["node_modules"]
+}
