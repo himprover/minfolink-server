@@ -2,6 +2,9 @@ const express = require('express');
 require('dotenv').config();
 const app = express();
 
+const http = require('http');
+const https = require('https');
+
 const cors = require('cors');
 require('better-module-alias')(__dirname);
 
@@ -20,6 +23,10 @@ app.listen(app.get('port'), () => {
 });
 
 app.use(express.json());
+
+// passport 초기화
+const passport = require('passport');
+app.use(passport.initialize());
 
 app.use(router);
 
