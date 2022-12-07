@@ -1,19 +1,29 @@
 const express = require('express');
 const router = express.Router();
 
+const { uuidForDb } = require('../../../../utils/uuid');
+
 const {
 	getAccessTokenInRequest,
 	verifyAccessToken,
 } = require('../../../../utils/jwt');
 const { pool } = require('../../../../utils/postgres');
 
-const SNS_TYPE_LIST = ['instagram', 'facebook', 'youtube', 'twitch', 'twitter'];
+const SNS_TYPE_LIST = [
+	'instagram',
+	'facebook',
+	'youtube',
+	'twitch',
+	'twitter',
+	'kakaotalk',
+];
 const URL_REG =
 	/^(((http(s?))\:\/\/)?)([0-9a-zA-Z\-]+\.)+[a-zA-Z]{2,6}(\:[0-9]+)?(\/\S*)?$/;
 
 router.put('/', async (req, res) => {
 	const snsType = req.body.type;
 	const snsLink = req.body.link;
+	const snsSequence = req.body.sequence;
 
 	if (
 		snsType === undefined ||
@@ -28,14 +38,38 @@ router.put('/', async (req, res) => {
 		return res.status(400).json({ errorCode: 400002 }).end();
 	}
 
+	if (snsSequence === undefined || snsSequence > 5 || snsSequence < 1) {
+		console.log('SNS 링크 변경, SEQUENCE 오류');
+		return res.status(400).json({ errorCode: 400003 }).end();
+	}
+
 	const { id } = verifyAccessToken(getAccessTokenInRequest(req));
 	try {
 		const putSql =
-			'INSERT INTO user_sns (id, type, link) VALUES ($1, $2, $3) ON CONFLICT (id, type) DO UPDATE SET link=$3';
-		await pool.query(putSql, [id, snsType, snsLink]);
-		return res.status(200).end();
+			'INSERT INTO user_sns (id, user_id, sequence, type, link) VALUES ($1, $2, $3, $4, $5)';
+		await pool.query(putSql, [uuidForDb(), id, snsSequence, snsType, snsLink]);
+		return res.status(201).end();
 	} catch (error) {
 		console.log('SNS 링크 변경, DB 오류 ' + error);
+		return res.status(500).end();
+	}
+});
+
+router.delete('/', async (req, res) => {
+	const snsSequence = req.query.sequence;
+	if (snsSequence === undefined || snsSequence > 5 || snsSequence < 1) {
+		console.log('SNS 링크 삭제, SEQUENCE 오류');
+		return res.status(400).json({ errorCode: 10000 }).end();
+	}
+
+	const { id } = verifyAccessToken(getAccessTokenInRequest(req));
+	try {
+		const putSql =
+			'UPDATE user_sns SET link=NULL WHERE user_id=$1 AND sequence=$2';
+		await pool.query(putSql, [id, snsSequence]);
+		return res.status(204).end();
+	} catch (error) {
+		console.log('SNS 링크 삭제, DB 오류 ' + error);
 		return res.status(500).end();
 	}
 });
